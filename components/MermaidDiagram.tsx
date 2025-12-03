@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import mermaid from 'mermaid';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
-import { ZoomIn, ZoomOut, Maximize, AlertTriangle, Code } from 'lucide-react';
+import { ZoomIn, ZoomOut, Maximize, AlertTriangle, Code, Copy } from 'lucide-react';
 
 interface MermaidDiagramProps {
   code: string;
@@ -36,8 +36,6 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, onError }) => {
 
       try {
         const id = `mermaid-${Date.now()}`;
-        // Mermaid expects the element to be in the DOM to calculate dimensions sometimes, 
-        // but render returns an SVG string we can inject.
         const { svg } = await mermaid.render(id, code);
         setSvgContent(svg);
       } catch (error: any) {
@@ -50,6 +48,11 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, onError }) => {
 
     renderDiagram();
   }, [code, onError]);
+
+  const handleCopyCode = () => {
+    navigator.clipboard.writeText(code);
+    alert("Mermaid code copied to clipboard");
+  };
 
   if (!code) {
     return (
@@ -65,9 +68,9 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, onError }) => {
          <div className="bg-red-100 p-3 rounded-full text-red-500 mb-4">
            <AlertTriangle size={32} />
          </div>
-         <h3 className="text-lg font-semibold text-red-800 mb-2">Diagram Rendering Failed</h3>
+         <h3 className="text-lg font-semibold text-red-800 mb-2">Visualization Error</h3>
          <p className="text-red-600 mb-6 max-w-md text-sm">
-           The generated diagram code contains syntax errors. This sometimes happens with complex layouts or specific data structures.
+           The AI generated diagram code contains syntax errors. Please try generating again with a clearer prompt, or copy the code below to fix it manually.
          </p>
          
          <div className="w-full max-w-lg bg-white rounded-lg border border-red-200 overflow-hidden text-left shadow-sm">
@@ -75,6 +78,12 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, onError }) => {
              <span className="text-xs font-semibold text-red-700 flex items-center gap-2">
                <Code size={14} /> Raw Mermaid Code
              </span>
+             <button 
+               onClick={handleCopyCode}
+               className="text-xs text-red-600 hover:text-red-800 flex items-center gap-1 bg-white px-2 py-1 rounded border border-red-100"
+             >
+               <Copy size={12} /> Copy
+             </button>
            </div>
            <pre className="p-4 text-xs font-mono overflow-auto max-h-48 text-slate-600 whitespace-pre-wrap">
              {code}
@@ -86,10 +95,6 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, onError }) => {
 
   return (
     <div className="relative w-full h-full bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
-       <div className="absolute top-4 right-4 z-10 flex gap-2">
-         {/* Controls provided by the wrapper normally */}
-      </div>
-
       <TransformWrapper
         initialScale={1}
         minScale={0.5}
@@ -119,7 +124,7 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, onError }) => {
                 ref={containerRef}
                 className="mermaid-container w-full h-full flex items-center justify-center p-8"
                 dangerouslySetInnerHTML={{ __html: svgContent }}
-                style={{ minHeight: '400px' }} // Ensure visibility
+                style={{ minHeight: '400px' }}
               />
             </TransformComponent>
           </>

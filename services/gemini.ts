@@ -42,16 +42,22 @@ export const generateDiagramAndSummary = async (
   const prompt = `
     Analyze the provided content (text or document) and perform two tasks:
     1. Create a concise summary of the key concepts (max 300 words).
-    2. specific Generate a Mermaid.js diagram code block that visually represents the information.
+    2. Generate a Mermaid.js diagram code block that visually represents the information.
     
     The diagram type must be: ${type}.
     
-    For ${DiagramType.MINDMAP}: Use 'mindmap' syntax. Focus on hierarchy and connections.
-    For ${DiagramType.FLOWCHART}: Use 'graph TD' or 'graph LR' syntax. Focus on processes or logical flow.
-    For ${DiagramType.SEQUENCE}: Use 'sequenceDiagram' syntax. Focus on interactions over time.
-    For ${DiagramType.TIMELINE}: Use 'timeline' syntax. Focus on chronological events.
-    For ${DiagramType.ORGCHART}: Use 'graph TD' syntax. Focus on roles, reporting lines, and hierarchical structure. Use distinct shapes or styles for different levels if possible.
-    For ${DiagramType.GANTT}: Use 'gantt' syntax. Focus on tasks, durations, and dependencies. Ensure dates are formatted YYYY-MM-DD.
+    SPECIFIC INSTRUCTIONS FOR DIAGRAM TYPE:
+    - ${DiagramType.MINDMAP}: Use 'mindmap' syntax. Focus on hierarchy and connections. Root node should be central concept.
+    - ${DiagramType.FLOWCHART}: Use 'graph TD' or 'graph LR' syntax. Focus on processes or logical flow.
+    - ${DiagramType.SEQUENCE}: Use 'sequenceDiagram' syntax. Focus on interactions over time.
+    - ${DiagramType.TIMELINE}: Use 'timeline' syntax. Focus on chronological events.
+    - ${DiagramType.ORGCHART}: Use 'graph TD' syntax. Structure it hierarchically (CEO -> Managers -> Staff). Use styling (subgraphs or node shapes) to distinguish levels.
+    - ${DiagramType.GANTT}: Use 'gantt' syntax. STRICTLY follow this format:
+      dateFormat YYYY-MM-DD
+      title [Project Title]
+      section [Section Name]
+      [Task Name] : [Active Status], [Task ID], [Start Date], [Duration/End Date]
+      Ensure dates are realistic and relative to the current year. Avoid invalid syntax like multiple titles.
 
     Output Format (JSON):
     {
@@ -59,7 +65,7 @@ export const generateDiagramAndSummary = async (
       "diagramCode": "The mermaid code here..."
     }
     
-    IMPORTANT: Return ONLY valid JSON. Ensure the mermaid code is syntactically correct and escapes characters properly.
+    IMPORTANT: Return ONLY valid JSON. Ensure the mermaid code is syntactically correct and escapes characters properly. Do not include markdown formatting outside the JSON string.
   `;
 
   parts.push({ text: prompt });
@@ -70,12 +76,20 @@ export const generateDiagramAndSummary = async (
       contents: { parts },
       config: {
         responseMimeType: "application/json",
-        thinkingConfig: { thinkingBudget: 0 } // Disable thinking for faster response on simple tasks, or enable if complex
+        thinkingConfig: { thinkingBudget: 0 } 
       }
     });
 
     const text = response.text || "{}";
-    const json = JSON.parse(text);
+    let json;
+    try {
+      json = JSON.parse(text);
+    } catch (e) {
+      // Fallback if model returns code blocks outside JSON
+      console.warn("JSON Parse failed, attempting cleanup", text);
+      const cleanText = text.replace(/```json\n|\n```/g, '');
+      json = JSON.parse(cleanText);
+    }
 
     return {
       summary: json.summary || "Could not generate summary.",
@@ -96,14 +110,8 @@ export const askQuestionAboutContent = async (
 ): Promise<string> => {
   if (!apiKey) throw new Error("API Key is missing");
 
-  // Construct history for context
-  // We will treat this as a single-turn generation with context for simplicity in this stateless example,
-  // or we can use chat. But since we have file attachments which might need to be re-sent or cached, 
-  // keeping it simple by sending context + history in a generateContent call is often more robust for 'document Q&A'.
-  
   const parts: any[] = [];
   
-  // Add context first
   if (contextFile) {
     parts.push({
       inlineData: {

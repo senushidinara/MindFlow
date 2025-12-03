@@ -40,8 +40,8 @@ const App: React.FC = () => {
       return;
     }
 
-    setProcessingState({ status: 'processing', message: 'Analyzing content & generating diagram...' });
-    setChatMessages([]); // Reset chat on new generation? Or keep? Resetting makes sense for new context.
+    setProcessingState({ status: 'processing', message: 'Analyzing content & generating visualization...' });
+    setChatMessages([]); 
     
     try {
       const result = await generateDiagramAndSummary(inputText, selectedFile, selectedType);
@@ -113,8 +113,8 @@ const App: React.FC = () => {
             <BrainCircuit size={24} />
           </div>
           <div>
-            <h1 className="font-bold text-xl text-slate-900 tracking-tight">MindFlow</h1>
-            <p className="text-xs text-slate-500 font-medium">AI Study Companion</p>
+            <h1 className="font-bold text-xl text-slate-900 tracking-tight">StudySketch AI</h1>
+            <p className="text-xs text-slate-500 font-medium">Smart Visual Notes</p>
           </div>
         </div>
 
@@ -203,9 +203,9 @@ const App: React.FC = () => {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col h-screen overflow-hidden bg-slate-50 relative">
         
-        {/* Mobile Header (Only visible on small screens) */}
+        {/* Mobile Header */}
         <div className="md:hidden p-4 bg-white border-b border-slate-200 flex justify-between items-center">
-          <span className="font-bold text-slate-900">MindFlow</span>
+          <span className="font-bold text-slate-900">StudySketch AI</span>
           <span className="text-xs text-slate-500">Scroll down for output</span>
         </div>
 
@@ -259,7 +259,7 @@ const App: React.FC = () => {
                </div>
              </div>
 
-             {/* Right Side Chat (Collapsible on mobile maybe, but side-by-side on desktop) */}
+             {/* Right Side Chat */}
              <div className="h-[300px] md:h-full md:w-80 lg:w-96 flex-shrink-0">
                <ChatPanel 
                  messages={chatMessages} 
