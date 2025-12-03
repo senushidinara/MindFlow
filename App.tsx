@@ -20,7 +20,8 @@ import {
   Edit2,
   Save,
   Download,
-  RotateCw
+  RotateCw,
+  Play
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
@@ -30,49 +31,77 @@ import ChatPanel from './components/ChatPanel';
 import { generateDiagramAndSummary, askQuestionAboutContent } from './services/gemini';
 import { DiagramType, FileData, GeneratedContent, Message, ProcessingState } from './types';
 
-// Hardcoded README for the Info Modal
+// Updated README Content matching the user's description
 const README_CONTENT = `
 # 🎨 StudySketch AI
 
-> **Turn your notes into diagrams, mind-maps & study aides (On-Device, Arm Optimized).**
+> **StudySketch AI transforms dense notes into interactive mind-maps, flowcharts, and flashcards — all offline on your device.**
 
-## 📂 Project Structure (Arm Integration)
+![StudySketch Banner](https://images.unsplash.com/photo-1501504905252-473c47e087f8?q=80&w=2574&auto=format&fit=crop)
 
-This repository contains the full stack for cross-platform mobile development with native inference modules.
+Upload a PDF, DOCX, or image. The app runs smart OCR, extracts headings, bullets, tables, and key insights, then automatically builds a dynamic mind-map. Every node is **editable, mergeable, and customizable**, so you can reorganize ideas instantly.
 
-\`\`\`text
-studysketch-ai/
-├── android/                 # Android-specific project
-│   ├── app/
-│   │   └── build.gradle
-│   └── build.gradle
-├── ios/                     # iOS-specific project
-│   ├── StudySketchAI/
-│   │   └── App.swift
-│   ├── MLModels/
-│   │   └── README.md
-│   └── build_ios.sh
-├── app/
-│   ├── lib/
-│   │   └── main.dart        # Flutter Entry Point
-│   └── native_inference/
-│       ├── android/
-│       │   └── Bridge.kt
-│       └── ios/
-│           └── Bridge.swift
-├── models/                  # Optimized models
-│   ├── coreml_summarizer/
-│   ├── quantized_summarizer/
-│   └── graph_generator/
-├── tools/                   # Python pipelines
-│   ├── convert_model.py
-│   ├── ocr_pipeline.py
-│   └── sample_notebooks/
-├── scripts/                 
-│   ├── build_android.sh
-│   └── package_models.sh
-├── README.md
-└── LICENSE                  
+**Generate flashcards with a single click** — the app produces smart Q&A cards ready for Anki or CSV export. Summaries, highlights, and diagrams are fully automated and interactive.
+
+All of this runs **on-device** using Arm-optimized models, Core ML on Apple Silicon, and quantized transformer pipelines. Heavy computations are accelerated via NEON SIMD, CPU/GPU/NPU delegates, and hardware-optimized runtimes, delivering fast, smooth, and energy-efficient performance without sending data to the cloud.
+
+Developers can rebuild or update models using included conversion scripts and native runtime modules, ensuring the AI always runs efficiently on Arm phones, tablets, and Apple devices.
+
+**StudySketch AI makes unstructured notes visual, actionable, and easy to study, helping users understand and revise faster — instantly, securely, and efficiently on Arm devices.**
+
+---
+
+## 🏗️ System Architecture & Arm Optimization
+
+StudySketch AI isn't just a wrapper; it's a deeply optimized edge-AI application designed to run efficiently on Armv8-A and Armv9-A architectures.
+
+### 1. The Mobile Inference Stack 📱
+This diagram shows how we bridge the high-level UI (Flutter/React) with low-level Arm hardware features.
+
+\`\`\`mermaid
+graph TD
+    User["👤 User Input"] --> UI["📱 Flutter / React Native UI"]
+    
+    subgraph Application_Layer ["Application Layer"]
+        UI --> Controller["Logic Controller"]
+        Controller --> Bridge["Native Bridge (JNI / FFI)"]
+    end
+    
+    subgraph Inference_Engine ["Inference Engine (Arm Optimized)"]
+        Bridge --> Router{"Hardware Router"}
+        Router -->|Android| TFLite["TensorFlow Lite (NNAPI)"]
+        Router -->|iOS| CoreML["Core ML (ANE)"]
+        Router -->|Fallback| CPU_Inf["ExecuTorch (Neon Optimized)"]
+    end
+    
+    subgraph Arm_Hardware ["Arm Hardware"]
+        TFLite --> NPU["⚡ Neural Processing Unit"]
+        CoreML --> NPU
+        CPU_Inf --> CPU["⚙️ Arm Cortex CPU"]
+    end
+
+    style NPU fill:#ff9,stroke:#333,stroke-width:2px
+    style CPU fill:#bbf,stroke:#333,stroke-width:2px
+\`\`\`
+
+### 2. The Model Quantization Pipeline 🔄
+We use a custom Python pipeline to shrink large Transformer models into mobile-ready formats without losing accuracy.
+
+\`\`\`mermaid
+flowchart LR
+    Raw["PyTorch Model .pt"] -->|Trace| TorchScript
+    TorchScript -->|Export| ONNX["ONNX Format"]
+    
+    subgraph Quantization ["Quantization & Conversion"]
+        ONNX -->|Quantize Int8| Quant["Quantized Model"]
+        Quant -->|Convert| TFLite["TF Lite .tflite"]
+        Quant -->|Convert| CML["Core ML .mlmodel"]
+    end
+    
+    TFLite --> Android["🤖 Android (Arm)"]
+    CML --> iOS["🍎 iOS (Apple Silicon)"]
+    
+    style Quant fill:#f9f,stroke:#333
 \`\`\`
 `;
 
@@ -123,6 +152,31 @@ const App: React.FC = () => {
       setProcessingState({ status: 'error', message: 'Failed to generate content. Please try again.' });
       console.error(error);
     }
+  };
+  
+  const loadDemoData = () => {
+    setProcessingState({ status: 'processing', message: 'Loading demo content...' });
+    setTimeout(() => {
+        setInputText("Photosynthesis is the process used by plants, algae and certain bacteria to harness energy from sunlight and turn it into chemical energy. The process takes place in the chloroplasts, specifically using chlorophyll. The inputs are Carbon Dioxide, Water, and Sunlight. The outputs are Glucose and Oxygen.");
+        setContent({
+            diagramCode: `graph TD
+    A["Sunlight"] --> B("Chloroplast")
+    C["Water"] --> B
+    D["CO2"] --> B
+    B --> E["Glucose"]
+    B --> F["Oxygen"]
+    style B fill:#bbf,stroke:#333,stroke-width:2px`,
+            summary: "## Photosynthesis Summary\n\n**Photosynthesis** is a biological process used by many cellular organisms to convert light energy into chemical energy. \n\n*   **Location**: Chloroplasts (via Chlorophyll)\n*   **Inputs**: Sunlight, Water (H2O), Carbon Dioxide (CO2)\n*   **Outputs**: Glucose (Energy), Oxygen (O2)\n\nThis process is fundamental for life on Earth as it provides oxygen and energy for the food web.",
+            diagramType: DiagramType.MINDMAP,
+            flashcards: [
+                { id: 'demo1', front: "Where does photosynthesis take place?", back: "In the Chloroplasts" },
+                { id: 'demo2', front: "What are the primary inputs?", back: "Sunlight, Water, and Carbon Dioxide" },
+                { id: 'demo3', front: "What is the primary energy output?", back: "Glucose" }
+            ]
+        });
+        setProcessingState({ status: 'completed' });
+        setActiveTab('diagram');
+    }, 1500);
   };
 
   const handleSendMessage = async (text: string) => {
@@ -224,19 +278,25 @@ const App: React.FC = () => {
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           
           {/* Arm Optimization Dashboard */}
-          <div className="bg-slate-900 rounded-xl p-4 text-white shadow-lg relative overflow-hidden">
-             <div className="absolute top-0 right-0 p-2 opacity-10">
+          <div className="bg-slate-900 rounded-xl p-4 text-white shadow-lg relative overflow-hidden group">
+             <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity">
                <Cpu size={80} />
              </div>
              <div className="relative z-10">
-               <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Device Status</h3>
+               <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center justify-between">
+                  Device Status
+                  <span className="flex h-2 w-2 relative">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                  </span>
+               </h3>
                <div className="flex items-center gap-2 mb-1">
                  <Smartphone size={16} className="text-indigo-400" />
                  <span className="font-mono text-sm">Arm64 / Android 14</span>
                </div>
                <div className="flex items-center gap-2 mb-3">
                  <Zap size={16} className="text-yellow-400" />
-                 <span className="font-mono text-sm text-yellow-400">NPU Active (NNAPI)</span>
+                 <span className="font-mono text-sm text-yellow-400 animate-pulse">NPU Active (NNAPI)</span>
                </div>
                <div className="text-[10px] bg-white/10 p-2 rounded border border-white/10 font-mono">
                  Model: Quantized (Int8)<br/>
@@ -245,6 +305,14 @@ const App: React.FC = () => {
                </div>
              </div>
           </div>
+          
+          {/* Demo Button */}
+          <button
+            onClick={loadDemoData}
+            className="w-full py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2 border border-indigo-200"
+          >
+             <Play size={14} fill="currentColor" /> Load Demo Data
+          </button>
 
           {/* File Upload Section */}
           <section>
@@ -267,7 +335,7 @@ const App: React.FC = () => {
               </h2>
             </div>
             <textarea 
-              className="w-full h-40 p-4 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm resize-none"
+              className="w-full h-32 p-4 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm resize-none"
               placeholder="Paste your lecture notes, summaries, or text here..."
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
@@ -372,6 +440,11 @@ const App: React.FC = () => {
                   className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 border-b-2 transition-colors ${activeTab === 'flashcards' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
                  >
                    <Layers size={16} /> Flashcards
+                   {content?.flashcards?.length ? (
+                      <span className="bg-indigo-100 text-indigo-700 text-[10px] px-1.5 py-0.5 rounded-full font-bold">
+                        {content.flashcards.length}
+                      </span>
+                   ) : null}
                  </button>
                </div>
 

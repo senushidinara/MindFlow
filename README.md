@@ -1,3 +1,4 @@
+
 # 🎨 StudySketch AI
 
 > **StudySketch AI transforms dense notes into interactive mind-maps, flowcharts, and flashcards — all offline on your device.**

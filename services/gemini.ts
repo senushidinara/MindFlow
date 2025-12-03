@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { DiagramType, GeneratedContent, FileData, Message, Flashcard } from '../types';
 
@@ -48,17 +49,30 @@ export const generateDiagramAndSummary = async (
     The diagram type must be: ${type}.
     
     SPECIFIC INSTRUCTIONS FOR DIAGRAM TYPE:
-    - ${DiagramType.MINDMAP}: Use 'mindmap' syntax. Focus on hierarchy and connections. Root node should be central concept.
-    - ${DiagramType.FLOWCHART}: Use 'graph TD' or 'graph LR' syntax. Focus on processes or logical flow.
+    - ${DiagramType.MINDMAP}: Use 'mindmap' syntax. 
+      IMPORTANT: STRICTLY Enclose ALL multi-word labels in double quotes. 
+      Correct: Branch1("Longer Label Here")
+      Incorrect: Branch1(Longer Label Here)
+      Example:
+      mindmap
+        root((Central Topic))
+          Branch1
+            Leaf("Leaf Node")
+          Branch2("Multi Word Label")
+    - ${DiagramType.FLOWCHART}: Use 'graph TD' or 'graph LR' syntax. 
+      IMPORTANT: Node IDs must have NO spaces. Use quoted labels for text. 
+      Correct: id1["Label With Spaces"] --> id2["Another Label"]
+      Incorrect: Label With Spaces --> Another Label
     - ${DiagramType.SEQUENCE}: Use 'sequenceDiagram' syntax. Focus on interactions over time.
     - ${DiagramType.TIMELINE}: Use 'timeline' syntax. Focus on chronological events.
-    - ${DiagramType.ORGCHART}: Use 'graph TD' syntax. Structure it hierarchically (CEO -> Managers -> Staff). Use styling (subgraphs or node shapes) to distinguish levels.
+    - ${DiagramType.ORGCHART}: Use 'graph TD' syntax. Structure it hierarchically. 
+      IMPORTANT: Use subgraphs or styled nodes. Ensure Node IDs have NO spaces.
+      A["CEO"] --> B["Manager"]
     - ${DiagramType.GANTT}: Use 'gantt' syntax. STRICTLY follow this format:
       dateFormat YYYY-MM-DD
-      title [Project Title]
-      section [Section Name]
-      [Task Name] : [Active Status], [Task ID], [Start Date], [Duration/End Date]
-      Ensure dates are realistic and relative to the current year. Avoid invalid syntax like multiple titles.
+      title Project Schedule
+      section Phase 1
+      Task Name : active, t1, 2024-01-01, 30d
 
     Output Format (JSON):
     {
